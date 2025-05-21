@@ -1,0 +1,80 @@
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"time"
+
+	"user-signup-rabbitmq/pkg/common"
+)
+
+func generatePDF(event common.UserEvent) {
+	log.Printf("Generating PDF for %s %s", event.FirstName, event.LastName)
+	// TODO: Implement PDF generation logic
+	time.Sleep(2 * time.Second)
+}
+
+func main() {
+	conn := common.ConnectRabbitMQ()
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Channel creation failed: %s", err)
+	}
+	defer ch.Close()
+
+	common.SetupExchange(ch)
+
+	q, err := ch.QueueDeclare(
+		"pdf_service",
+		true,  // Durable
+		false, // Delete when unused
+		false, // Exclusive
+		false, // No-wait
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Queue declaration failed: %s", err)
+	}
+
+	err = ch.QueueBind(
+		q.Name,
+		"",
+		"user_signups",
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Queue bind failed: %s", err)
+	}
+
+	msgs, err := ch.Consume(
+		q.Name,
+		"",
+		false, // Auto-ack
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Consume failed: %s", err)
+	}
+
+	log.Println("PDF service started. Waiting for events...")
+
+	for d := range msgs {
+		var event common.UserEvent
+		if err := json.Unmarshal(d.Body, &event); err != nil {
+			log.Printf("Error decoding message: %s", err)
+			d.Nack(false, true) // Requeue message
+			continue
+		}
+
+		go func() {
+			generatePDF(event)
+			d.Ack(false)
+		}()
+	}
+}
