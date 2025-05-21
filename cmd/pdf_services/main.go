@@ -6,11 +6,36 @@ import (
 	"time"
 
 	"user-signup-rabbitmq/pkg/common"
+	"user-signup-rabbitmq/pkg/pdf_invoice"
 )
 
 func generatePDF(event common.UserEvent) {
 	log.Printf("Generating PDF for %s %s", event.FirstName, event.LastName)
-	// TODO: Implement PDF generation logic
+
+	// Initialize PDF generator
+	cfg, err := pdf_invoice.LoadConfig()
+	if err != nil {
+		log.Printf("PDF config error: %v", err)
+		return
+	}
+
+	generator := pdf_invoice.NewGenerator(cfg)
+
+	// Convert to PDF data structure
+	pdfData := &common.UserEvent{
+		Email:     event.Email,
+		FirstName: event.FirstName,
+		LastName:  event.LastName,
+	}
+
+	// Generate and save PDF
+	filename, err := generator.GenerateInvoice(pdfData)
+	if err != nil {
+		log.Printf("PDF generation failed: %v", err)
+		return
+	}
+
+	log.Printf("PDF generated successfully: %s", filename)
 	time.Sleep(2 * time.Second)
 }
 
