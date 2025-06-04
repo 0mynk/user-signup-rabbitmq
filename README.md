@@ -2,6 +2,8 @@
 
 This project implements a microservices-based system for processing user signup events using RabbitMQ as the message broker. The system consists of multiple services that handle different aspects of user signup processing, including email notifications and PDF invoice generation.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
 ## System Architecture
 
 The system is composed of the following components:
@@ -121,3 +123,5 @@ The `pkg/common` package provides shared functionality:
 - Messages are acknowledged only after successful processing
 - Failed messages are requeued for retry
 
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. The MIT License is a permissive license that is short and to the point.
